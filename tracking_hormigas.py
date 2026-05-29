@@ -36,21 +36,21 @@ def detectar_posibles_hormigas(frame):
     return np.array(coordenadas)
     #return frame
 
-def individualizar_hormigas(coordenadas):
+def individualizar_hormigas(coordenadas,e,p):
     
     #Individualizacion con DBSCAN
-    clustering = DBSCAN(eps=10, min_samples=50).fit(coordenadas)
+    clustering = DBSCAN(eps=e, min_samples=p).fit(coordenadas)
     
     #Clusters  correspondiente a cada punto y ruido
     labels=clustering.labels_
     
     #Depuracion de clusters que probablemente son ruido
-    promedio_puntos_por_cluster=((len(labels)-(np.count_nonzero(labels == -1)))/(len(np.unique(labels))-1))*0.55
     unicos_labels, cantidad = np.unique(labels, return_counts=True)
-    es_pequeño= (cantidad < promedio_puntos_por_cluster ) & (unicos_labels != -1)
-    labels_a_eliminar = unicos_labels[es_pequeño]
-    labels[np.isin(labels, labels_a_eliminar)] = -1
-
+    if len(unicos_labels)!=1: 
+        promedio_puntos_por_cluster=((len(labels)-(np.count_nonzero(labels == -1)))/(len(unicos_labels)-1))*0.55
+        es_pequeño= (cantidad < promedio_puntos_por_cluster ) & (unicos_labels != -1)
+        labels_a_eliminar = unicos_labels[es_pequeño]
+        labels[np.isin(labels, labels_a_eliminar)] = -1
     return labels
 
 
@@ -91,7 +91,7 @@ def main():
     
     #Deteccion de hormigas
     coordenadas_posibles_hormigas=detectar_posibles_hormigas(frame)
-    labels_hormigas=individualizar_hormigas(coordenadas_posibles_hormigas)
+    labels_hormigas=individualizar_hormigas(coordenadas_posibles_hormigas,10,50)
     
     
     #Dibujo de rectangulos de deteccion de hormigas
@@ -115,42 +115,36 @@ def main():
     #Seleccion de label a trackear 
     label_a_trackear=int(input(f"Selecciona uno de los siguientes labels para ver su recorrido: {lista_labels}  "))
     
-    #Aplicacion de mascara para enfocarse en el label a trackear
+    #Cordenadas de mascara inicial para enfocarse en el label a trackear
     coordenadas_rectangulo_label=coordenadas_bordes_rectangulos[lista_labels.index(label_a_trackear)]
-    coordenadas_mascara=[(coordenadas_rectangulo_label[0][0]-100,coordenadas_rectangulo_label[0][1]-100),(coordenadas_rectangulo_label[1][0]+100,coordenadas_rectangulo_label[1][1]+100)]
-    frame=aplicar_mascara_frame(frame, coordenadas_mascara)
-    frame_con_punto=cv.circle(frame.copy(), punto_central_frame(labels_hormigas,coordenadas_x,coordenadas_y,label_a_trackear), 2, (0,0,255),5)
-    cv.imshow("Trackeo", frame_con_punto)
-    cv.waitKey(0)
+    coordenadas_mascara=[(coordenadas_rectangulo_label[0][0]-10,coordenadas_rectangulo_label[0][1]-10),(coordenadas_rectangulo_label[1][0]+10,coordenadas_rectangulo_label[1][1]+10)]
+    
+    #Punto central inicial
+    punto_central= punto_central_frame(labels_hormigas,coordenadas_x,coordenadas_y,label_a_trackear)
+    
+    coordendas_x_recorrido=[]
+    coordenadas_y_recorrido=[]
+    #Tracking de label seleccionado
+    while(True):
+        is_true,frame=video.read()
+        if is_true:
+            frame=aplicar_mascara_frame(frame, coordenadas_mascara)
+            coordenadas_posibles_hormigas=detectar_posibles_hormigas(frame)
+            labels_hormigas=individualizar_hormigas(coordenadas_posibles_hormigas,5,30)
+            coordenadas_x=coordenadas_posibles_hormigas[:,0]
+            coordenadas_y=coordenadas_posibles_hormigas[:,1]
+            print(np.unique(labels_hormigas))
+            filas=frame.shape[0]
+            colours = [(0.5, 0.5, 0.5) if label == -1 else (1, 0, 0) for label in labels_hormigas]
+            plt.scatter(coordenadas_x,filas-coordenadas_y,c=colours,s=1)
+            plt.show()
+            cv.imshow("Video",frame)
+            if cv.waitKey(1) & 0xFF==ord('d'):
+                break
+        else:
+            break
+    video.release()
     cv.destroyAllWindows()
-    
-    
-    # coordenadas_x=coordenadas_posibles_hormigas[:,0]
-    # coordenadas_y=coordenadas_posibles_hormigas[:,1]
-    # colours=individualizar_hormigas(coordenadas_posibles_hormigas)
-    # plt.scatter(coordenadas_x,coordenadas_y,c=colours,s=1)
-    
-    
-    # while(True):
-    #     is_true,frame=video.read()
-    #     if is_true:
-    #         #frame=detectar_posibles_hormigas(frame)
-    #         coordenadas_posibles_hormigas=detectar_posibles_hormigas(frame)
-            
-    #         #Presentacion de hormigas individualizadas 
-
-    #         coordenadas_x=coordenadas_posibles_hormigas[:,0]
-    #         coordenadas_y=coordenadas_posibles_hormigas[:,1]
-    #         colours=individualizar_hormigas(coordenadas_posibles_hormigas)
-    #         plt.scatter(coordenadas_x,coordenadas_y,c=colours,s=1)
-    #         plt.show()
-    #         cv.imshow("Video",frame)
-    #         if cv.waitKey(1) & 0xFF==ord('d'):
-    #             break
-    #     else:
-    #         break
-    # video.release()
-    # cv.destroyAllWindows()
         
 main()
 

@@ -36,7 +36,7 @@ def detectar_coordenadas_hormigas(frame):
     return np.array(coordenadas)
     #return frame
 
-def individualizar_hormigas(coordenadas,e,p,b=1,average=True):
+def individualizar_puntos(coordenadas,e,p,b=1,average=True):
     
     #Individualizacion con DBSCAN
     clustering = DBSCAN(eps=e, min_samples=p).fit(coordenadas)
@@ -116,14 +116,17 @@ def detectar_coordenadas_puntos_en_hongo(imagen):
         coordenadas.append([x,y])     
     return np.array(coordenadas)
 
+
 def main():
     #Lectura primer frame
     video=cv.VideoCapture("ant_video.mp4")
     is_true,frame=video.read()
+    filas=frame.shape[0]
+    columnas=frame.shape[1]
     
     #Deteccion de hormigas
     coordenadas_hormigas=detectar_coordenadas_hormigas(frame)
-    labels_hormigas=individualizar_hormigas(coordenadas_hormigas,10,50,b=0.55)
+    labels_hormigas=individualizar_puntos(coordenadas_hormigas,10,50,b=0.55)
     
     #Dibujo de rectangulos de deteccion de hormigas
     coordenadas_x=coordenadas_hormigas[:,0]
@@ -160,14 +163,14 @@ def main():
         coordenadas_puntos_hongo=detectar_coordenadas_puntos_en_hongo(imagen_hongo_aislado)
         coordenadas_x=coordenadas_puntos_hongo[:,0]
         coordenadas_y=coordenadas_puntos_hongo[:,1]
-        filas=frame.shape[0]
-        columnas=frame.shape[1]
+        labels_puntos_hongo=individualizar_puntos(coordenadas_puntos_hongo,10,30)
+        colores = [(0.5, 0.5, 0.5) if label == -1 else (1, 0, 0) for label in labels_puntos_hongo]
         
         #GRAFICO DE PUNTOS DE HONGO
-        # plt.scatter(coordenadas_x,filas-coordenadas_y,s=2)
-        # plt.xlim(0,columnas)
-        # plt.ylim(0,filas)
-        # plt.show()
+        plt.scatter(coordenadas_x,filas-coordenadas_y,s=2,c=colores)
+        plt.xlim(0,columnas)
+        plt.ylim(0,filas)
+        plt.show()
         
     p=input("Hola")
     #Variables para ajustar que frames estudiar
@@ -286,9 +289,7 @@ def main():
     #GRAFICO  DE RECORRIDO DE LABEL (HORMIGA) SELECCIONADO
  
     video=cv.VideoCapture("ant_video.mp4")
-    is_true,frame=video.read()
-    filas=frame.shape[0]
-    columnas=frame.shape[1]  
+    is_true,frame=video.read() 
     plt.scatter(coordenadas_x_recorrido,filas-np.array(coordenadas_y_recorrido),s=2)
     plt.scatter(coordenadas_x_recorrido[0],filas - coordenadas_y_recorrido[0],s=2, c="green")
     plt.scatter(coordenadas_x_recorrido[-1],filas-coordenadas_y_recorrido[-1],s=2, c="red")

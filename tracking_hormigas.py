@@ -95,6 +95,27 @@ def separacion_fondo(video,n):
     # retorna un numpy array con la media de cada pixel de los n frames
     return np.median(frames, axis=0).astype(dtype=np.uint8)
 
+def coordenadas_puntos_en_hongo(imagen):
+    coordenadas=[]
+    # imagen[:,:,0] es blue, imagen[:,:,1] es green,  imagen[:,:,2] es Red
+    #Se extraen los canales y se pasan a int32 para prevenir errores matematicos
+    b = imagen[:, :, 0].astype(np.int32)
+    g = imagen[:, :, 1].astype(np.int32)
+    r = imagen[:, :, 2].astype(np.int32)
+    
+    # Condiciones para que un frame sea considerado como posible parte del hongo
+    cond_green  = r > (1 * g)
+    cond_blue   = r > (1 * b)
+    cond_thresh = r > 40
+    cond_green_blue= g>b*1.03
+    
+    #Combinacion de condiciones 
+    mask_hormigas = cond_green & cond_blue & cond_thresh & cond_green_blue
+    y_indices, x_indices = np.where(mask_hormigas)
+    for x, y in zip(x_indices, y_indices):
+        coordenadas.append([x,y])     
+    return np.array(coordenadas)
+
 def main():
     #Lectura primer frame
     video=cv.VideoCapture("ant_video.mp4")
@@ -136,8 +157,19 @@ def main():
     deteccion_hongo=input("¿Desea saber en que parte del recorrido estuvo sobre el hongo? 1.Si , 0.No")
     if(deteccion_hongo=="1"):
         imagen_hongo_aislado=separacion_fondo(video,200)
-    
-    
+        coordenadas_puntos_hongo=coordenadas_puntos_en_hongo(imagen_hongo_aislado)
+        coordenadas_x=coordenadas_puntos_hongo[:,0]
+        coordenadas_y=coordenadas_puntos_hongo[:,1]
+        filas=frame.shape[0]
+        columnas=frame.shape[1]
+        
+        #GRAFICO DE PUNTOS DE HONGO
+        # plt.scatter(coordenadas_x,filas-coordenadas_y,s=2)
+        # plt.xlim(0,columnas)
+        # plt.ylim(0,filas)
+        # plt.show()
+        
+    p=input("Hola")
     #Variables para ajustar que frames estudiar
     salto_frame = 1
     frame_contador = 1    

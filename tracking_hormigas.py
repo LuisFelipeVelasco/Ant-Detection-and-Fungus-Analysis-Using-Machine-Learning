@@ -10,7 +10,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-def detectar_posibles_hormigas(frame):
+def detectar_coordenadas_hormigas(frame):
     coordenadas=[]
     # frame[:,:,0] es blue, frame[:,:,1] es green, frame[:,:,2] es Red
     
@@ -54,7 +54,7 @@ def individualizar_hormigas(coordenadas,e,p,b=1,average=True):
     return labels
 
 
-def coordenadas_en_los_extremos_de_cluster(labels,coordenadas_x,coordenadas_y,l):
+def conseguir_coordenadas_en_los_extremos_de_cluster(labels,coordenadas_x,coordenadas_y,l):
     
     #Coordenadas x ,  y de un especifico label
     x_de_l=coordenadas_x[labels==l]
@@ -73,7 +73,7 @@ def aplicar_mascara_frame(frame,coordenadas):
     #Aplicacion de mascara en el frame
     return cv.bitwise_and(frame, frame, mask=mask)
 
-def punto_central_frame(labels,coordenadas_x,coordenadas_y,l):
+def conseguir_punto_central_frame(labels,coordenadas_x,coordenadas_y,l):
     #Coordenadas x ,  y de un especifico label
     x_de_l=coordenadas_x[labels==l]
     y_de_l=coordenadas_y[labels==l]
@@ -95,7 +95,7 @@ def separacion_fondo(video,n):
     # retorna un numpy array con la media de cada pixel de los n frames
     return np.median(frames, axis=0).astype(dtype=np.uint8)
 
-def coordenadas_puntos_en_hongo(imagen):
+def detectar_coordenadas_puntos_en_hongo(imagen):
     coordenadas=[]
     # imagen[:,:,0] es blue, imagen[:,:,1] es green,  imagen[:,:,2] es Red
     #Se extraen los canales y se pasan a int32 para prevenir errores matematicos
@@ -122,18 +122,18 @@ def main():
     is_true,frame=video.read()
     
     #Deteccion de hormigas
-    coordenadas_posibles_hormigas=detectar_posibles_hormigas(frame)
-    labels_hormigas=individualizar_hormigas(coordenadas_posibles_hormigas,10,50,b=0.55)
+    coordenadas_hormigas=detectar_coordenadas_hormigas(frame)
+    labels_hormigas=individualizar_hormigas(coordenadas_hormigas,10,50,b=0.55)
     
     #Dibujo de rectangulos de deteccion de hormigas
-    coordenadas_x=coordenadas_posibles_hormigas[:,0]
-    coordenadas_y=coordenadas_posibles_hormigas[:,1]
+    coordenadas_x=coordenadas_hormigas[:,0]
+    coordenadas_y=coordenadas_hormigas[:,1]
     coordenadas_bordes_rectangulos=[]
     lista_labels=np.unique(labels_hormigas).tolist()
     lista_labels.remove(-1)
     frame_con_rectangulos=frame.copy()
     for l in lista_labels:
-        x_minimo_de_l,x_maximo_de_l,y_minimo_de_l,y_maximo_de_l=coordenadas_en_los_extremos_de_cluster(labels_hormigas, coordenadas_x, coordenadas_y, l)
+        x_minimo_de_l,x_maximo_de_l,y_minimo_de_l,y_maximo_de_l=conseguir_coordenadas_en_los_extremos_de_cluster(labels_hormigas, coordenadas_x, coordenadas_y, l)
         esquina_superior_izquierda=(x_minimo_de_l,y_minimo_de_l)
         esquina_inferior_derecha=(x_maximo_de_l,y_maximo_de_l)
         cv.rectangle(frame_con_rectangulos,esquina_superior_izquierda,esquina_inferior_derecha, (0, 255, 0), 2)
@@ -149,7 +149,7 @@ def main():
     #Cordenadas de mascara inicial para enfocarse en el label a trackear
     coordenadas_rectangulo_label=coordenadas_bordes_rectangulos[lista_labels.index(label_a_trackear)]
     coordenadas_mascara=[(coordenadas_rectangulo_label[0][0]-0,coordenadas_rectangulo_label[0][1]-0),(coordenadas_rectangulo_label[1][0]+0,coordenadas_rectangulo_label[1][1]+0)]
-    punto_central=punto_central_frame(labels_hormigas,coordenadas_x,coordenadas_y,label_a_trackear)
+    punto_central=conseguir_punto_central_frame(labels_hormigas,coordenadas_x,coordenadas_y,label_a_trackear)
     
     coordenadas_x_recorrido=[punto_central[0]]
     coordenadas_y_recorrido=[punto_central[1]]
@@ -157,7 +157,7 @@ def main():
     deteccion_hongo=input("¿Desea saber en que parte del recorrido estuvo sobre el hongo? 1.Si , 0.No")
     if(deteccion_hongo=="1"):
         imagen_hongo_aislado=separacion_fondo(video,200)
-        coordenadas_puntos_hongo=coordenadas_puntos_en_hongo(imagen_hongo_aislado)
+        coordenadas_puntos_hongo=detectar_coordenadas_puntos_en_hongo(imagen_hongo_aislado)
         coordenadas_x=coordenadas_puntos_hongo[:,0]
         coordenadas_y=coordenadas_puntos_hongo[:,1]
         filas=frame.shape[0]
@@ -183,20 +183,20 @@ def main():
             if (frame_contador%salto_frame==0):
                 
                 #Deteccion de hormigas
-                coordenadas_posibles_hormigas=detectar_posibles_hormigas(frame)
-                if len(coordenadas_posibles_hormigas)!=0:
+                coordenadas_hormigas=detectar_coordenadas_hormigas(frame)
+                if len(coordenadas_hormigas)!=0:
                     
                     #Individualizacion de cada punto para detectar si es del label elegido (hormiga) o ruido
-                    labels_hormigas=individualizar_hormigas(coordenadas_posibles_hormigas,8,20,average=True)
-                    coordenadas_x=coordenadas_posibles_hormigas[:,0]
-                    coordenadas_y=coordenadas_posibles_hormigas[:,1]
+                    labels_hormigas=individualizar_hormigas(coordenadas_hormigas,8,20,average=True)
+                    coordenadas_x=coordenadas_hormigas[:,0]
+                    coordenadas_y=coordenadas_hormigas[:,1]
                     
                     #Reconocimiento de punto central
                     unicos_labels=np.unique(labels_hormigas)
                     #Si solo se reconoce un label (Probablemente la misma hormiga) calcula el punto central
                     if len(unicos_labels)==1:
                         label_punto_central=unicos_labels[0]
-                        punto_central=punto_central_frame(labels_hormigas,coordenadas_x,coordenadas_y,label_punto_central)
+                        punto_central=conseguir_punto_central_frame(labels_hormigas,coordenadas_x,coordenadas_y,label_punto_central)
                         coordenadas_x_recorrido.append(punto_central[0])
                         coordenadas_y_recorrido.append(punto_central[1])
                         
@@ -204,7 +204,7 @@ def main():
                     #Si se reconocen dos labels y el primero es ruido calcula el punto central del otro label (probablemente la hormiga)
                     elif (len(unicos_labels)==2 and unicos_labels[0]==-1):
                         label_punto_central=unicos_labels[1]
-                        punto_central=punto_central_frame(labels_hormigas,coordenadas_x,coordenadas_y,label_punto_central)
+                        punto_central=conseguir_punto_central_frame(labels_hormigas,coordenadas_x,coordenadas_y,label_punto_central)
                         coordenadas_x_recorrido.append(punto_central[0])
                         coordenadas_y_recorrido.append(punto_central[1])
                         
@@ -219,7 +219,7 @@ def main():
                         
                         #Identifica el punto central de cada label
                         for i in range(primer_index,ultimo_index):
-                            punto_central_i=punto_central_frame(labels_hormigas,coordenadas_x,coordenadas_y,unicos_labels[i])
+                            punto_central_i=conseguir_punto_central_frame(labels_hormigas,coordenadas_x,coordenadas_y,unicos_labels[i])
                             puntos_centrales_x.append(punto_central_i[0])
                             puntos_centrales_y.append(punto_central_i[1])
                         

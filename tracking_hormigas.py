@@ -36,7 +36,7 @@ def detectar_posibles_hormigas(frame):
     return np.array(coordenadas)
     #return frame
 
-def individualizar_hormigas(coordenadas,e,p):
+def individualizar_hormigas(coordenadas,e,p,b=1,average=True):
     
     #Individualizacion con DBSCAN
     clustering = DBSCAN(eps=e, min_samples=p).fit(coordenadas)
@@ -46,8 +46,8 @@ def individualizar_hormigas(coordenadas,e,p):
     
     #Depuracion de clusters que probablemente son ruido
     unicos_labels, cantidad = np.unique(labels, return_counts=True)
-    if len(unicos_labels)!=1: 
-        promedio_puntos_por_cluster=((len(labels)-(np.count_nonzero(labels == -1)))/(len(unicos_labels)-1))*0.55
+    if len(unicos_labels)!=1 and average: 
+        promedio_puntos_por_cluster=((len(labels)-(np.count_nonzero(labels == -1)))/(len(unicos_labels)-1))*b
         es_pequeño= (cantidad < promedio_puntos_por_cluster ) & (unicos_labels != -1)
         labels_a_eliminar = unicos_labels[es_pequeño]
         labels[np.isin(labels, labels_a_eliminar)] = -1
@@ -77,7 +77,6 @@ def punto_central_frame(labels,coordenadas_x,coordenadas_y,l):
     #Coordenadas x ,  y de un especifico label
     x_de_l=coordenadas_x[labels==l]
     y_de_l=coordenadas_y[labels==l]
-    
     #Calcula el promedio de puntos ,que es equivalente al punto central
     return  (int(sum(x_de_l)/len(x_de_l)),int(sum(y_de_l)/len(x_de_l)))
     
@@ -91,7 +90,9 @@ def main():
     
     #Deteccion de hormigas
     coordenadas_posibles_hormigas=detectar_posibles_hormigas(frame)
-    labels_hormigas=individualizar_hormigas(coordenadas_posibles_hormigas,10,50)
+    
+    labels_hormigas=individualizar_hormigas(coordenadas_posibles_hormigas,10,50,b=0.55)
+    
     
     
     #Dibujo de rectangulos de deteccion de hormigas
@@ -103,8 +104,8 @@ def main():
     frame_con_rectangulos=frame.copy()
     for l in lista_labels:
         x_minimo_de_l,x_maximo_de_l,y_minimo_de_l,y_maximo_de_l=coordenadas_en_los_extremos_de_cluster(labels_hormigas, coordenadas_x, coordenadas_y, l)
-        esquina_superior_izquierda=(x_minimo_de_l-10,y_minimo_de_l-10)
-        esquina_inferior_derecha=(x_maximo_de_l+10,y_maximo_de_l+10)
+        esquina_superior_izquierda=(x_minimo_de_l,y_minimo_de_l)
+        esquina_inferior_derecha=(x_maximo_de_l,y_maximo_de_l)
         cv.rectangle(frame_con_rectangulos,esquina_superior_izquierda,esquina_inferior_derecha, (0, 255, 0), 2)
         cv.putText(frame_con_rectangulos,f"{l}",esquina_superior_izquierda, cv.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
         coordenadas_bordes_rectangulos.append([esquina_superior_izquierda, esquina_inferior_derecha])
@@ -117,27 +118,117 @@ def main():
     
     #Cordenadas de mascara inicial para enfocarse en el label a trackear
     coordenadas_rectangulo_label=coordenadas_bordes_rectangulos[lista_labels.index(label_a_trackear)]
-    coordenadas_mascara=[(coordenadas_rectangulo_label[0][0]-10,coordenadas_rectangulo_label[0][1]-10),(coordenadas_rectangulo_label[1][0]+10,coordenadas_rectangulo_label[1][1]+10)]
+    coordenadas_mascara=[(coordenadas_rectangulo_label[0][0]-0,coordenadas_rectangulo_label[0][1]-0),(coordenadas_rectangulo_label[1][0]+0,coordenadas_rectangulo_label[1][1]+0)]
+    punto_central=punto_central_frame(labels_hormigas,coordenadas_x,coordenadas_y,label_a_trackear)
     
-    #Punto central inicial
-    punto_central= punto_central_frame(labels_hormigas,coordenadas_x,coordenadas_y,label_a_trackear)
+    coordenadas_x_recorrido=[punto_central[0]]
+    coordenadas_y_recorrido=[punto_central[1]]
     
-    coordendas_x_recorrido=[]
-    coordenadas_y_recorrido=[]
-    #Tracking de label seleccionado
+    #Variables para ajustar que frames estudiar
+    salto_frame = 1
+    frame_contador = 1    
     while(True):
         is_true,frame=video.read()
-        if is_true:
+        if is_true :
+            
+            #Mascara para enfocarse en el label elegido
             frame=aplicar_mascara_frame(frame, coordenadas_mascara)
-            coordenadas_posibles_hormigas=detectar_posibles_hormigas(frame)
-            labels_hormigas=individualizar_hormigas(coordenadas_posibles_hormigas,5,30)
-            coordenadas_x=coordenadas_posibles_hormigas[:,0]
-            coordenadas_y=coordenadas_posibles_hormigas[:,1]
-            print(np.unique(labels_hormigas))
+            
+            if (frame_contador%salto_frame==0):
+                
+                #Deteccion de hormigas
+                coordenadas_posibles_hormigas=detectar_posibles_hormigas(frame)
+                if len(coordenadas_posibles_hormigas)!=0:
+                    
+                    #Individualizacion de cada punto para detectar si es del label elegido (hormiga) o ruido
+                    labels_hormigas=individualizar_hormigas(coordenadas_posibles_hormigas,8,20,average=True)
+                    coordenadas_x=coordenadas_posibles_hormigas[:,0]
+                    coordenadas_y=coordenadas_posibles_hormigas[:,1]
+                    
+                    #Reconocimiento de punto central
+                    unicos_labels=np.unique(labels_hormigas)
+                    #Si solo se reconoce un label (Probablemente la misma hormiga) calcula el punto central
+                    if len(unicos_labels)==1:
+                        label_punto_central=unicos_labels[0]
+                        punto_central=punto_central_frame(labels_hormigas,coordenadas_x,coordenadas_y,label_punto_central)
+                        coordenadas_x_recorrido.append(punto_central[0])
+                        coordenadas_y_recorrido.append(punto_central[1])
+                        
+                        
+                    #Si se reconocen dos labels y el primero es ruido calcula el punto central del otro label (probablemente la hormiga)
+                    elif (len(unicos_labels)==2 and unicos_labels[0]==-1):
+                        label_punto_central=unicos_labels[1]
+                        punto_central=punto_central_frame(labels_hormigas,coordenadas_x,coordenadas_y,label_punto_central)
+                        coordenadas_x_recorrido.append(punto_central[0])
+                        coordenadas_y_recorrido.append(punto_central[1])
+                        
+                    #Si reconoce mas de un label , identifica el punto central de cada uno y escoge el mas cercano al punto central del pasado frame
+                    else:
+                        puntos_centrales_x=[]
+                        puntos_centrales_y=[]
+                        
+                        #Si  hay ruido itera desde el segundo label , sino , itera desde el primer label
+                        primer_index=1 if (unicos_labels[0]==-1) else 0
+                        ultimo_index=len(unicos_labels) if (unicos_labels[0]==-1) else  len(unicos_labels)    
+                        
+                        #Identifica el punto central de cada label
+                        for i in range(primer_index,ultimo_index):
+                            punto_central_i=punto_central_frame(labels_hormigas,coordenadas_x,coordenadas_y,unicos_labels[i])
+                            puntos_centrales_x.append(punto_central_i[0])
+                            puntos_centrales_y.append(punto_central_i[1])
+                        
+                        #Coordenadas de pasado punto central
+                        punto_central_viejo_x=coordenadas_x_recorrido[-1]
+                        punto_central_viejo_y=coordenadas_y_recorrido[-1]
+                        
+                        #Numpy array de las coordenadas de los puntos centrales de cada label
+                        puntos_centrales_x=np.array(puntos_centrales_x)
+                        puntos_centrales_y=np.array(puntos_centrales_y)
+                        
+                        #Distancia de cada punto central a el pasado punto central
+                        distancias=((puntos_centrales_x - punto_central_viejo_x)**2 +  (puntos_centrales_y - punto_central_viejo_y)**2).tolist()
+                        
+                        #Establecimiento de nuevo punto central
+                        index_punto_central_cercano_a_viejo=distancias.index(min(distancias))
+                        coordenadas_x_recorrido.append(puntos_centrales_x[index_punto_central_cercano_a_viejo])
+                        coordenadas_y_recorrido.append(puntos_centrales_y[index_punto_central_cercano_a_viejo])
+                        punto_central=(coordenadas_x_recorrido[-1] , coordenadas_y_recorrido[-1] )
+                        
+                    
+                    #Reubicar mascara a partir de la ubicacion del ultimo punto central
+                    if len(coordenadas_x_recorrido)>=2:
+                        x_viejo_nuevo_cpoints_distancia=coordenadas_x_recorrido[-1] - coordenadas_x_recorrido[-2]
+                        y_viejo_nuevo_cpoints_distancia=coordenadas_y_recorrido[-1] - coordenadas_y_recorrido[-2]
+                        coordenadas_mascara=[(coordenadas_mascara[0][0]+x_viejo_nuevo_cpoints_distancia,
+                                              coordenadas_mascara[0][1]+y_viejo_nuevo_cpoints_distancia),
+                                             (coordenadas_mascara[1][0]+x_viejo_nuevo_cpoints_distancia,
+                                              coordenadas_mascara[1][1]+y_viejo_nuevo_cpoints_distancia)]
+            
+            frame_contador+=1
+    
             filas=frame.shape[0]
-            colours = [(0.5, 0.5, 0.5) if label == -1 else (1, 0, 0) for label in labels_hormigas]
-            plt.scatter(coordenadas_x,filas-coordenadas_y,c=colours,s=1)
-            plt.show()
+            columnas=frame.shape[1]
+            
+            #GRAFICO  DE RECORRIDO DE LABEL (HORMIGA) SELECCIONADO
+            
+            # plt.scatter(coordenadas_x_recorrido,filas-np.array(coordenadas_y_recorrido),s=2)
+            # plt.xlim(0,columnas)
+            # plt.ylim(0,filas)
+            # plt.show()
+            
+            
+            #GRAFICO DE PUNTOS INDIVIDUALIZADOS CON PASADO PUNTO CENTRAL
+            
+            #colores = [(0.5, 0.5, 0.5) if label == -1 else (1, 0, 0) for label in labels_hormigas]
+            # plt.scatter(coordenadas_x,filas-coordenadas_y,s=10,c=colores)
+            # plt.xlim(0,columnas)
+            # plt.ylim(0,filas)
+            # if frame_contador>=3:
+            #     plt.scatter(coordenadas_x_recorrido[-2],filas-coordenadas_y_recorrido[-2],s=10,c="green")
+            # plt.show()
+            
+            #DESPLIGUE DE VIDEO CON CAPA Y PUNTO CENTRAL DE LABEL SELECCIONADO
+            cv.circle(frame, punto_central, 2, (0,255,0),5)
             cv.imshow("Video",frame)
             if cv.waitKey(1) & 0xFF==ord('d'):
                 break
@@ -145,6 +236,19 @@ def main():
             break
     video.release()
     cv.destroyAllWindows()
-        
+    
+    #GRAFICO  DE RECORRIDO DE LABEL (HORMIGA) SELECCIONADO
+ 
+    video=cv.VideoCapture("ant_video.mp4")
+    is_true,frame=video.read()
+    filas=frame.shape[0]
+    columnas=frame.shape[1]  
+    plt.scatter(coordenadas_x_recorrido,filas-np.array(coordenadas_y_recorrido),s=2)
+    plt.scatter(coordenadas_x_recorrido[0],filas - coordenadas_y_recorrido[0],s=2, c="green")
+    plt.scatter(coordenadas_x_recorrido[-1],filas-coordenadas_y_recorrido[-1],s=2, c="red")
+    plt.xlim(0,columnas)
+    plt.ylim(0,filas)
+    plt.show()
+            
 main()
 

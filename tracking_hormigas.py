@@ -81,7 +81,19 @@ def punto_central_frame(labels,coordenadas_x,coordenadas_y,l):
     return  (int(sum(x_de_l)/len(x_de_l)),int(sum(y_de_l)/len(x_de_l)))
     
     
-#Lectura de video de hormigas y despliegue de video procesado
+def separacion_fondo(video,n):
+    #Escoge al azar  n ids entre 1 el numero total de  frames del video
+    frame_ids = video.get(cv.CAP_PROP_FRAME_COUNT) * np.random.uniform(size=n)
+
+    #Guarda los frames de los ids escogidos
+    frames = []
+    for fid in frame_ids:
+        video.set(cv.CAP_PROP_POS_FRAMES, fid)
+        ret, frame = video.read()
+        if ret:
+            frames.append(frame)
+    # retorna un numpy array con la media de cada pixel de los n frames
+    return np.median(frames, axis=0).astype(dtype=np.uint8)
 
 def main():
     #Lectura primer frame
@@ -90,10 +102,7 @@ def main():
     
     #Deteccion de hormigas
     coordenadas_posibles_hormigas=detectar_posibles_hormigas(frame)
-    
     labels_hormigas=individualizar_hormigas(coordenadas_posibles_hormigas,10,50,b=0.55)
-    
-    
     
     #Dibujo de rectangulos de deteccion de hormigas
     coordenadas_x=coordenadas_posibles_hormigas[:,0]
@@ -123,6 +132,11 @@ def main():
     
     coordenadas_x_recorrido=[punto_central[0]]
     coordenadas_y_recorrido=[punto_central[1]]
+    
+    deteccion_hongo=input("¿Desea saber en que parte del recorrido estuvo sobre el hongo? 1.Si , 0.No")
+    if(deteccion_hongo=="1"):
+        imagen_hongo_aislado=separacion_fondo(video,200)
+    
     
     #Variables para ajustar que frames estudiar
     salto_frame = 1

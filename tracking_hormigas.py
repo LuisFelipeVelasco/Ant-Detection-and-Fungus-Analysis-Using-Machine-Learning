@@ -53,6 +53,18 @@ def individualizar_puntos(coordenadas,e,p,b=1,average=True):
         labels[np.isin(labels, labels_a_eliminar)] = -1
     return labels
 
+def depurar_ruido(labels,coordenadas,mascara):
+    #Array cuyos labels iguales a -1 se convierte en true y el resto en false (Para enfocarse en el ruido)
+    separacion_ruido=np.where(labels==-1)
+    
+    #Array con solo las coordenadas de los puntos  que son ruido
+    coordenadas_ruido=coordenadas[separacion_ruido]
+    coordenadas_ruido_x=coordenadas_ruido[:,0]
+    coordenadas_ruido_y=coordenadas_ruido[:,1]
+    
+    #Mascara cuyo puntos detectados como ruido se les da un valor falso
+    mascara[coordenadas_ruido_y,coordenadas_ruido_x]=False
+    return mascara
 
 def conseguir_coordenadas_en_los_extremos_de_cluster(labels,coordenadas_x,coordenadas_y,l):
     
@@ -259,20 +271,8 @@ def main():
         
         #Individualizacion de cada punto
         labels_puntos_hongo=individualizar_puntos(coordenadas_puntos_hongo,10,30)
-        
-        #Array cuyos labels iguales a -1 se convierte en true y el resto en false (Para enfocarse en el ruido)
-        separacion_ruido=np.where(labels_puntos_hongo==-1)
-        
-        #Array con solo las coordenadas de los puntos detectados como hongo que son ruido
-        coordenadas_puntos_hongo_ruido=coordenadas_puntos_hongo[separacion_ruido]
-        coordenadas_ruido_x=coordenadas_puntos_hongo_ruido[:,0]
-        coordenadas_ruido_y=coordenadas_puntos_hongo_ruido[:,1]
-        
-        #Mascara cuyo puntos detectados como hongo que son ruido se les da un valor falso
-        mascara_puntos_hongo[coordenadas_ruido_y,coordenadas_ruido_x]=False
-        
+        mascara_puntos_hongo=depurar_ruido(labels_puntos_hongo, coordenadas_puntos_hongo, mascara_puntos_hongo)
         coordenadas_puntos_hongo_incluyendo_huecos,mascara_hongo_final=rellenar_huecos_hongo(mascara_puntos_hongo)
-        
         puntos_centrales_en_hongo=[]
         
         #Volver al frame 1 porque se cambio en separacion_fondo()
@@ -330,18 +330,19 @@ def main():
                         mostrar_grafico(coordenadas_x_recorrido,filas-np.array(coordenadas_y_recorrido),2,colores,columnas,filas)
                         plt.show()
                         
-            frame_contador+=1   
-            #GRAFICO  DE RECORRIDO DE LABEL (HORMIGA) SELECCIONADO
-            mostrar_grafico(coordenadas_x_recorrido,filas-np.array(coordenadas_y_recorrido),2,(0,0.5,1),columnas,filas)
-            plt.show()
- 
+                    else:
+                        
+                        frame_contador+=1   
+                        #GRAFICO  DE RECORRIDO DE LABEL (HORMIGA) SELECCIONADO
+                        mostrar_grafico(coordenadas_x_recorrido,filas-np.array(coordenadas_y_recorrido),2,(0,0.5,1),columnas,filas)
+                        plt.show()
             
-            
-            #GRAFICO DE PUNTOS INDIVIDUALIZADOS CON PASADO PUNTO CENTRAL
-            
-            #colores = [(1, 0.6, 0) if v == True else (0, 0.5, 1) for v in puntos_centrales_en_hongo]
-            #mostrar_grafico(coordenadas_x_recorrido, filas - np.array(coordenadas_y_recorrido), 2, colores, columnas, filas)
-            #plt.show()
+                        #GRAFICO DE PUNTOS INDIVIDUALIZADOS CON PASADO PUNTO CENTRAL
+                        
+                        #colores = [(1, 0.6, 0) if v == True else (0, 0.5, 1) for v in puntos_centrales_en_hongo]
+                        #mostrar_grafico(coordenadas_x_recorrido, filas - np.array(coordenadas_y_recorrido), 2, colores, columnas, filas)
+                        #plt.show()
+                        
             
             #DESPLIGUE DE VIDEO CON CAPA Y PUNTO CENTRAL DE LABEL SELECCIONADO
             

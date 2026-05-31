@@ -73,14 +73,17 @@ def aplicar_mascara_frame(frame,coordenadas):
     #Aplicacion de mascara en el frame
     return cv.bitwise_and(frame, frame, mask=mask)
 
-def conseguir_punto_central_frame(labels,coordenadas_x,coordenadas_y,l):
+def conseguir_punto_central_label(labels,coordenadas_x,coordenadas_y,l):
     #Coordenadas x ,  y de un especifico label
     x_de_l=coordenadas_x[labels==l]
     y_de_l=coordenadas_y[labels==l]
     #Calcula el promedio de puntos ,que es equivalente al punto central
     return  (int(sum(x_de_l)/len(x_de_l)),int(sum(y_de_l)/len(x_de_l)))
     
-    
+
+
+
+
 def separacion_fondo(video,n):
     #Escoge al azar  n ids entre 1 el numero total de  frames del video
     frame_ids = video.get(cv.CAP_PROP_FRAME_COUNT) * np.random.uniform(size=n)
@@ -172,7 +175,7 @@ def main():
     #Cordenadas de mascara inicial para enfocarse en el label a trackear
     coordenadas_rectangulo_label=coordenadas_bordes_rectangulos[lista_labels.index(label_a_trackear)]
     coordenadas_mascara=[(coordenadas_rectangulo_label[0][0]-0,coordenadas_rectangulo_label[0][1]-0),(coordenadas_rectangulo_label[1][0]+0,coordenadas_rectangulo_label[1][1]+0)]
-    punto_central=conseguir_punto_central_frame(labels_hormigas,coordenadas_x,coordenadas_y,label_a_trackear)
+    punto_central=conseguir_punto_central_label(labels_hormigas,coordenadas_x,coordenadas_y,label_a_trackear)
     
     coordenadas_x_recorrido=[punto_central[0]]
     coordenadas_y_recorrido=[punto_central[1]]
@@ -227,6 +230,7 @@ def main():
     frame_contador = 1    
     while(True):
         is_true,frame=video.read()
+        frame2=frame.copy()
         if is_true :
             
             #Mascara para enfocarse en el label elegido
@@ -248,7 +252,7 @@ def main():
                     #Si solo se reconoce un label (Probablemente la misma hormiga) calcula el punto central
                     if len(unicos_labels)==1:
                         label_punto_central=unicos_labels[0]
-                        punto_central=conseguir_punto_central_frame(labels_hormigas,coordenadas_x,coordenadas_y,label_punto_central)
+                        punto_central=conseguir_punto_central_label(labels_hormigas,coordenadas_x,coordenadas_y,label_punto_central)
                         coordenadas_x_recorrido.append(punto_central[0])
                         coordenadas_y_recorrido.append(punto_central[1])
                         
@@ -256,7 +260,7 @@ def main():
                     #Si se reconocen dos labels y el primero es ruido calcula el punto central del otro label (probablemente la hormiga)
                     elif (len(unicos_labels)==2 and unicos_labels[0]==-1):
                         label_punto_central=unicos_labels[1]
-                        punto_central=conseguir_punto_central_frame(labels_hormigas,coordenadas_x,coordenadas_y,label_punto_central)
+                        punto_central=conseguir_punto_central_label(labels_hormigas,coordenadas_x,coordenadas_y,label_punto_central)
                         coordenadas_x_recorrido.append(punto_central[0])
                         coordenadas_y_recorrido.append(punto_central[1])
                         
@@ -271,7 +275,7 @@ def main():
                         
                         #Identifica el punto central de cada label
                         for i in range(primer_index,ultimo_index):
-                            punto_central_i=conseguir_punto_central_frame(labels_hormigas,coordenadas_x,coordenadas_y,unicos_labels[i])
+                            punto_central_i=conseguir_punto_central_label(labels_hormigas,coordenadas_x,coordenadas_y,unicos_labels[i])
                             puntos_centrales_x.append(punto_central_i[0])
                             puntos_centrales_y.append(punto_central_i[1])
                         
@@ -313,7 +317,7 @@ def main():
             
             #GRAFICO  DE RECORRIDO DE LABEL (HORMIGA) SELECCIONADO
             
-            colores = [(1, 1, 0) if v == True else (0, 0, 1) for v in puntos_centrales_en_hongo]
+            colores = [(1, 0.6, 0) if v == True else (0, 0.5, 1) for v in puntos_centrales_en_hongo]
             plt.scatter(coordenadas_x_recorrido,filas-np.array(coordenadas_y_recorrido),s=2,c=colores)
             plt.xlim(0,columnas)
             plt.ylim(0,filas)
@@ -322,7 +326,7 @@ def main():
             
             #GRAFICO DE PUNTOS INDIVIDUALIZADOS CON PASADO PUNTO CENTRAL
             
-            #colores = [(0.5, 0.5, 0.5) if label == -1 else (1, 0, 0) for label in labels_hormigas]
+            #colores = [(1, 0.6, 0) if v == True else (0, 0.5, 1) for v in puntos_centrales_en_hongo]
             # plt.scatter(coordenadas_x,filas-coordenadas_y,s=10,c=colores)
             # plt.xlim(0,columnas)
             # plt.ylim(0,filas)
@@ -331,8 +335,8 @@ def main():
             # plt.show()
             
             #DESPLIGUE DE VIDEO CON CAPA Y PUNTO CENTRAL DE LABEL SELECCIONADO
-            cv.circle(frame, punto_central, 2, (0,255,0),5)
-            cv.imshow("Video",frame)
+            cv.circle(frame2, punto_central, 2, (0,255,0),5)
+            cv.imshow("Video",frame2)
             if cv.waitKey(1) & 0xFF==ord('d'):
                 break
         else:
@@ -343,8 +347,9 @@ def main():
     #GRAFICO  DE RECORRIDO DE LABEL (HORMIGA) SELECCIONADO
  
     video=cv.VideoCapture("ant_video.mp4")
-    is_true,frame=video.read() 
-    plt.scatter(coordenadas_x_recorrido,filas-np.array(coordenadas_y_recorrido),s=2)
+    is_true,frame=video.read()
+    colores = [(1, 0.6, 0) if v == True else (0, 0.5, 1) for v in puntos_centrales_en_hongo]
+    plt.scatter(coordenadas_x_recorrido,filas-np.array(coordenadas_y_recorrido),s=2 , c=colores)
     plt.scatter(coordenadas_x_recorrido[0],filas - coordenadas_y_recorrido[0],s=2, c="green")
     plt.scatter(coordenadas_x_recorrido[-1],filas-coordenadas_y_recorrido[-1],s=2, c="red")
     plt.xlim(0,columnas)

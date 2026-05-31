@@ -132,7 +132,7 @@ def rellenar_huecos_hongo(mask):
     #Coordenadas de puntos_hongo
     y_indices, x_indices = np.where(puntos_hongo)
 
-    return np.column_stack((x_indices, y_indices))
+    return np.column_stack((x_indices, y_indices)),puntos_hongo
 
 
 
@@ -177,7 +177,7 @@ def main():
     coordenadas_x_recorrido=[punto_central[0]]
     coordenadas_y_recorrido=[punto_central[1]]
     
-    deteccion_hongo=input("¿Desea saber en que parte del recorrido estuvo sobre el hongo? 1.Si , 0.No")
+    deteccion_hongo=input("¿Desea saber en que parte del recorrido estuvo sobre el hongo? 1.Si , 0.No  ")
     
     #DETECCION HONGO
     if(deteccion_hongo=="1"):
@@ -195,19 +195,27 @@ def main():
         
         #Array con solo las coordenadas de los puntos detectados como hongo que son ruido
         coordenadas_puntos_hongo_ruido=coordenadas_puntos_hongo[separacion_ruido]
-        coordenadas_x=coordenadas_puntos_hongo_ruido[:,0]
-        coordenadas_y=coordenadas_puntos_hongo_ruido[:,1]
+        coordenadas_ruido_x=coordenadas_puntos_hongo_ruido[:,0]
+        coordenadas_ruido_y=coordenadas_puntos_hongo_ruido[:,1]
         
         #Mascara cuyo puntos detectados como hongo que son ruido se les da un valor falso
-        mascara_puntos_hongo[coordenadas_y,coordenadas_x]=False
+        mascara_puntos_hongo[coordenadas_ruido_y,coordenadas_ruido_x]=False
         
-        coordenadas_puntos_hongo_incluyendo_huecos=rellenar_huecos_hongo(mascara_puntos_hongo)
-        coordenadas_x=coordenadas_puntos_hongo_incluyendo_huecos[:,0]
-        coordenadas_y=coordenadas_puntos_hongo_incluyendo_huecos[:,1]
+        coordenadas_puntos_hongo_incluyendo_huecos,mascara_hongo_final=rellenar_huecos_hongo(mascara_puntos_hongo)
+        
+        puntos_centrales_en_hongo=[]
+        
+        #Volver al frame 1 porque se cambio en separacion_fondo()
+        video.set(cv.CAP_PROP_POS_FRAMES, 1)
+        
+        #Evaluando primer punto central si esta en hongo
+        esta_punto_central_en_hongo = mascara_hongo_final[coordenadas_y_recorrido[-1], coordenadas_x_recorrido[-1]]
+        puntos_centrales_en_hongo.append(esta_punto_central_en_hongo)
         
         #GRAFICO DE PUNTOS DE HONGO
-
-        # plt.scatter(coordenadas_x,filas-coordenadas_y,s=2)
+        # coordenadas_hongo_x=coordenadas_puntos_hongo_incluyendo_huecos[:,0]
+        # coordenadas_hongo_y=coordenadas_puntos_hongo_incluyendo_huecos[:,1]
+        # plt.scatter(coordenadas_hongo_x,filas-coordenadas_hongo_y,s=2)
         # plt.xlim(0,columnas)
         # plt.ylim(0,filas)
         # plt.show()
@@ -293,7 +301,11 @@ def main():
                                               coordenadas_mascara[0][1]+y_viejo_nuevo_cpoints_distancia),
                                              (coordenadas_mascara[1][0]+x_viejo_nuevo_cpoints_distancia,
                                               coordenadas_mascara[1][1]+y_viejo_nuevo_cpoints_distancia)]
-            
+                        
+                    if(deteccion_hongo=="1"):
+                        esta_punto_central_en_hongo = mascara_hongo_final[coordenadas_y_recorrido[-1], coordenadas_x_recorrido[-1]]
+                        puntos_centrales_en_hongo.append(esta_punto_central_en_hongo)
+                        
             frame_contador+=1
     
             filas=frame.shape[0]
@@ -301,10 +313,11 @@ def main():
             
             #GRAFICO  DE RECORRIDO DE LABEL (HORMIGA) SELECCIONADO
             
-            # plt.scatter(coordenadas_x_recorrido,filas-np.array(coordenadas_y_recorrido),s=2)
-            # plt.xlim(0,columnas)
-            # plt.ylim(0,filas)
-            # plt.show()
+            colores = [(1, 1, 0) if v == True else (0, 0, 1) for v in puntos_centrales_en_hongo]
+            plt.scatter(coordenadas_x_recorrido,filas-np.array(coordenadas_y_recorrido),s=2,c=colores)
+            plt.xlim(0,columnas)
+            plt.ylim(0,filas)
+            plt.show()
             
             
             #GRAFICO DE PUNTOS INDIVIDUALIZADOS CON PASADO PUNTO CENTRAL

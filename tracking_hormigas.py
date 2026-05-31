@@ -8,8 +8,6 @@ import cv2 as cv
 from sklearn.cluster import DBSCAN
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.ndimage import binary_dilation, binary_fill_holes
-
 
 
 def detectar_coordenadas_hormigas(frame):
@@ -98,7 +96,6 @@ def separacion_fondo(video,n):
     return np.median(frames, axis=0).astype(dtype=np.uint8)
 
 def detectar_coordenadas_puntos_en_hongo(imagen):
-    coordenadas=[]
     # imagen[:,:,0] es blue, imagen[:,:,1] es green,  imagen[:,:,2] es Red
     #Se extraen los canales y se pasan a int32 para prevenir errores matematicos
     b = imagen[:, :, 0].astype(np.int32)
@@ -113,17 +110,31 @@ def detectar_coordenadas_puntos_en_hongo(imagen):
     
     #Combinacion de condiciones 
     mask_hormigas = cond_green & cond_blue & cond_thresh & cond_green_blue
+
+    y_indices, x_indices = np.where(mask_hormigas)    
+    return np.column_stack((x_indices, y_indices)),mask_hormigas
+
+def rellenar_huecos_hongo(mask):
     
-    #RELLENO DE HUECOS :
+    #Solo toma en cuenta los puntos false (Los que no son hongo)
+    no_es_hongo=~mask
     
-    #Cierra los bordes
-    mask_hormigas = binary_dilation(mask_hormigas.astype(np.uint8))
-    #Rellena los huecos
-    mask_hormigas = binary_fill_holes(mask_hormigas)
-    y_indices, x_indices = np.where(mask_hormigas)
-    for x, y in zip(x_indices, y_indices):
-        coordenadas.append([x,y])     
-    return np.array(coordenadas)
+    #Estas cuatro lineas crean 4 mascaras , que vuelven los puntos que a su derecha , izquierda , arriba y abajo TRUE  respectivamente 
+    punto_hongo_a_la_derecha=np.fliplr(np.logical_or.accumulate(np.fliplr(mask),axis=1))
+    punto_hongo_a_la_izquierda=np.logical_or.accumulate(mask,axis=1)
+    punto_hongo_abajo=np.flipud(np.logical_or.accumulate(np.flipud(mask),axis=0))
+    punto_hongo_arriba=np.logical_or.accumulate(mask,axis=0)
+    
+    #Mascara final cuyos valores true son los de la primer mascara y los anterios pixeles false que tienen un punto del hongo en sus 4 direcciones
+    huecos_hongo=no_es_hongo & punto_hongo_a_la_derecha & punto_hongo_a_la_izquierda & punto_hongo_abajo & punto_hongo_arriba
+    puntos_hongo=mask | huecos_hongo
+    
+    #Coordenadas de puntos_hongo
+    y_indices, x_indices = np.where(puntos_hongo)
+
+    return np.column_stack((x_indices, y_indices))
+
+
 
 
 def main():
@@ -167,18 +178,40 @@ def main():
     coordenadas_y_recorrido=[punto_central[1]]
     
     deteccion_hongo=input("¿Desea saber en que parte del recorrido estuvo sobre el hongo? 1.Si , 0.No")
+    
+    #DETECCION HONGO
     if(deteccion_hongo=="1"):
+        
         imagen_hongo_aislado=separacion_fondo(video,200)
-        coordenadas_puntos_hongo=detectar_coordenadas_puntos_en_hongo(imagen_hongo_aislado)
-        coordenadas_x=coordenadas_puntos_hongo[:,0]
-        coordenadas_y=coordenadas_puntos_hongo[:,1]
+        
+        #Coordenadas y mascara de puntos detectados como hongo
+        coordenadas_puntos_hongo,mascara_puntos_hongo=detectar_coordenadas_puntos_en_hongo(imagen_hongo_aislado)
+        
+        #Individualizacion de cada punto
         labels_puntos_hongo=individualizar_puntos(coordenadas_puntos_hongo,10,30)
+        
+        #Array cuyos labels iguales a -1 se convierte en true y el resto en false (Para enfocarse en el ruido)
+        separacion_ruido=np.where(labels_puntos_hongo==-1)
+        
+        #Array con solo las coordenadas de los puntos detectados como hongo que son ruido
+        coordenadas_puntos_hongo_ruido=coordenadas_puntos_hongo[separacion_ruido]
+        coordenadas_x=coordenadas_puntos_hongo_ruido[:,0]
+        coordenadas_y=coordenadas_puntos_hongo_ruido[:,1]
+        
+        #Mascara cuyo puntos detectados como hongo que son ruido se les da un valor falso
+        mascara_puntos_hongo[coordenadas_y,coordenadas_x]=False
+        
+        coordenadas_puntos_hongo_incluyendo_huecos=rellenar_huecos_hongo(mascara_puntos_hongo)
+        coordenadas_x=coordenadas_puntos_hongo_incluyendo_huecos[:,0]
+        coordenadas_y=coordenadas_puntos_hongo_incluyendo_huecos[:,1]
+        
         #GRAFICO DE PUNTOS DE HONGO
-        # colores = [(0.5, 0.5, 0.5) if label == -1 else (1, 0, 0) for label in labels_puntos_hongo]
-        # plt.scatter(coordenadas_x,filas-coordenadas_y,s=2,c=colores)
+
+        # plt.scatter(coordenadas_x,filas-coordenadas_y,s=2)
         # plt.xlim(0,columnas)
         # plt.ylim(0,filas)
         # plt.show()
+        
         
     #p=input("Hola")
     #Variables para ajustar que frames estudiar

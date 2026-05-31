@@ -61,6 +61,18 @@ def conseguir_coordenadas_en_los_extremos_de_cluster(labels,coordenadas_x,coorde
     y_de_l=coordenadas_y[labels==l]
     return  min(x_de_l),max(x_de_l),min(y_de_l),max(y_de_l)
 
+
+def conseguir_rectangulo_de_un_label_en_frame(frame,labels,coordenadas_x,coordenadas_y,l,coordenadas_bordes_rectangulos):
+    x_minimo_de_l,x_maximo_de_l,y_minimo_de_l,y_maximo_de_l=conseguir_coordenadas_en_los_extremos_de_cluster(labels, coordenadas_x, coordenadas_y, l)
+    esquina_superior_izquierda=(x_minimo_de_l,y_minimo_de_l)
+    esquina_inferior_derecha=(x_maximo_de_l,y_maximo_de_l)
+    return esquina_superior_izquierda,esquina_inferior_derecha
+    
+def dibujar_rectangulo_en_frame(frame,esquina_superior_izquierda,esquina_inferior_derecha,l):
+    cv.rectangle(frame,esquina_superior_izquierda,esquina_inferior_derecha, (0, 255, 0), 2)
+    cv.putText(frame,f"{l}",esquina_superior_izquierda, cv.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
+    
+
 def aplicar_mascara_frame(frame,coordenadas):
     h, w = frame.shape[:2]
     
@@ -213,13 +225,13 @@ def main():
     lista_labels=np.unique(labels_hormigas).tolist()
     lista_labels.remove(-1)
     frame_con_rectangulos=frame.copy()
+    
     for l in lista_labels:
-        x_minimo_de_l,x_maximo_de_l,y_minimo_de_l,y_maximo_de_l=conseguir_coordenadas_en_los_extremos_de_cluster(labels_hormigas, coordenadas_x, coordenadas_y, l)
-        esquina_superior_izquierda=(x_minimo_de_l,y_minimo_de_l)
-        esquina_inferior_derecha=(x_maximo_de_l,y_maximo_de_l)
-        cv.rectangle(frame_con_rectangulos,esquina_superior_izquierda,esquina_inferior_derecha, (0, 255, 0), 2)
-        cv.putText(frame_con_rectangulos,f"{l}",esquina_superior_izquierda, cv.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
+        esquina_superior_izquierda,esquina_inferior_derecha=conseguir_rectangulo_de_un_label_en_frame(frame_con_rectangulos,labels_hormigas, coordenadas_x, coordenadas_y, l, coordenadas_bordes_rectangulos)
         coordenadas_bordes_rectangulos.append([esquina_superior_izquierda, esquina_inferior_derecha])
+        dibujar_rectangulo_en_frame(frame_con_rectangulos,esquina_superior_izquierda,esquina_inferior_derecha,l)
+        
+
     cv.imshow("Primer frame", frame_con_rectangulos)
     cv.waitKey(0)
     cv.destroyAllWindows()    
@@ -313,12 +325,16 @@ def main():
                         esta_punto_central_en_hongo = mascara_hongo_final[coordenadas_y_recorrido[-1], coordenadas_x_recorrido[-1]]
                         puntos_centrales_en_hongo.append(esta_punto_central_en_hongo)
                         
+                        #GRAFICO  DE RECORRIDO DE LABEL (HORMIGA) SELECCIONADO DETECTANDO HONGO
+                        colores = [(1, 0.6, 0) if v == True else (0, 0.5, 1) for v in puntos_centrales_en_hongo]
+                        mostrar_grafico(coordenadas_x_recorrido,filas-np.array(coordenadas_y_recorrido),2,colores,columnas,filas)
+                        plt.show()
+                        
             frame_contador+=1   
             #GRAFICO  DE RECORRIDO DE LABEL (HORMIGA) SELECCIONADO
-            
-            colores = [(1, 0.6, 0) if v == True else (0, 0.5, 1) for v in puntos_centrales_en_hongo]
-            mostrar_grafico(coordenadas_x_recorrido,filas-np.array(coordenadas_y_recorrido),2,colores,columnas,filas)
+            mostrar_grafico(coordenadas_x_recorrido,filas-np.array(coordenadas_y_recorrido),2,(0,0.5,1),columnas,filas)
             plt.show()
+ 
             
             
             #GRAFICO DE PUNTOS INDIVIDUALIZADOS CON PASADO PUNTO CENTRAL

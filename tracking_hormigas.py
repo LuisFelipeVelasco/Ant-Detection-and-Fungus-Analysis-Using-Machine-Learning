@@ -83,6 +83,7 @@ def conseguir_punto_central_label(labels,coordenadas_x,coordenadas_y,l):
 
 def conseguir_punto_central_frame(labels_individuales,labels,coordenadas_x,coordenadas_y,coordenadas_x_recorrido,coordenadas_y_recorrido):
     
+   #Si solo se reconoce un label  calcula el punto central
     if len(labels_individuales)==1:
         label_punto_central=labels_individuales[0]
         punto_central=conseguir_punto_central_label(labels,coordenadas_x,coordenadas_y,label_punto_central)
@@ -124,9 +125,14 @@ def conseguir_punto_central_frame(labels_individuales,labels,coordenadas_x,coord
         index_punto_central_cercano_a_viejo=distancias.index(min(distancias))
         punto_central=(puntos_centrales_x[index_punto_central_cercano_a_viejo],puntos_centrales_y[index_punto_central_cercano_a_viejo])
         return punto_central
+    
 
-
-
+def conseguir_cambio_de_posicion_mascara(cambio_x,cambio_y,coordenadas_mascara):
+    coordenadas_mascara=[(coordenadas_mascara[0][0]+cambio_x,
+                          coordenadas_mascara[0][1]+cambio_y),
+                         (coordenadas_mascara[1][0]+cambio_x,
+                          coordenadas_mascara[1][1]+cambio_y)]
+    return coordenadas_mascara
 
 def separacion_fondo(video,n):
     #Escoge al azar  n ids entre 1 el numero total de  frames del video
@@ -279,6 +285,7 @@ def main():
             #Mascara para enfocarse en el label elegido
             frame=aplicar_mascara_frame(frame, coordenadas_mascara)
             if (frame_contador%salto_frame==0):
+                
                 #Deteccion de hormigas
                 coordenadas_hormigas=detectar_coordenadas_hormigas(frame)
                 if len(coordenadas_hormigas)!=0:
@@ -289,19 +296,15 @@ def main():
                     
                     #Reconocimiento de punto central
                     labels_individuales=np.unique(labels_hormigas)
-                    #Si solo se reconoce un label (Probablemente la misma hormiga) calcula el punto central
                     punto_central=conseguir_punto_central_frame(labels_individuales, labels_hormigas, coordenadas_x, coordenadas_y, coordenadas_x_recorrido, coordenadas_y_recorrido)
                     coordenadas_x_recorrido.append(punto_central[0])
                     coordenadas_y_recorrido.append(punto_central[1])
                     
                     #Reubicar mascara a partir de la ubicacion del ultimo punto central
                     if len(coordenadas_x_recorrido)>=2:
-                        x_viejo_nuevo_cpoints_distancia=coordenadas_x_recorrido[-1] - coordenadas_x_recorrido[-2]
-                        y_viejo_nuevo_cpoints_distancia=coordenadas_y_recorrido[-1] - coordenadas_y_recorrido[-2]
-                        coordenadas_mascara=[(coordenadas_mascara[0][0]+x_viejo_nuevo_cpoints_distancia,
-                                              coordenadas_mascara[0][1]+y_viejo_nuevo_cpoints_distancia),
-                                             (coordenadas_mascara[1][0]+x_viejo_nuevo_cpoints_distancia,
-                                              coordenadas_mascara[1][1]+y_viejo_nuevo_cpoints_distancia)]
+                        cambio_x=coordenadas_x_recorrido[-1] - coordenadas_x_recorrido[-2]
+                        cambio_y=coordenadas_y_recorrido[-1] - coordenadas_y_recorrido[-2]
+                        coordenadas_mascara=calcular_cambio_de_posicion_mascara(cambio_x, cambio_y, coordenadas_mascara)
                         
                     if(deteccion_hongo=="1"):
                         esta_punto_central_en_hongo = mascara_hongo_final[coordenadas_y_recorrido[-1], coordenadas_x_recorrido[-1]]

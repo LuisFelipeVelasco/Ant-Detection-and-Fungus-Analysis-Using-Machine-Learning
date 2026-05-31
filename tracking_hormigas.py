@@ -188,8 +188,13 @@ def rellenar_huecos_hongo(mask):
     return np.column_stack((x_indices, y_indices)),puntos_hongo
 
 
-
-
+def mostrar_grafico(coordenadas_x,coordenadas_y,s,colores,ancho,alto):
+    plt.scatter(coordenadas_x,coordenadas_y,s=s,c=colores)
+    plt.xlim(0,ancho)
+    plt.ylim(0,alto)
+    
+    
+    
 def main():
     #Lectura primer frame
     video=cv.VideoCapture("ant_video.mp4")
@@ -268,10 +273,8 @@ def main():
         #GRAFICO DE PUNTOS DE HONGO
         # coordenadas_hongo_x=coordenadas_puntos_hongo_incluyendo_huecos[:,0]
         # coordenadas_hongo_y=coordenadas_puntos_hongo_incluyendo_huecos[:,1]
-        # plt.scatter(coordenadas_hongo_x,filas-coordenadas_hongo_y,s=2)
-        # plt.xlim(0,columnas)
-        # plt.ylim(0,filas)
-        # plt.show()
+        # mostrar_grafico(coordenadas_hongo_x, filas - coordenadas_hongo_y, 2, "red", columnas, filas)
+        #plt.show()
         
         
     #p=input("Hola")
@@ -304,37 +307,28 @@ def main():
                     if len(coordenadas_x_recorrido)>=2:
                         cambio_x=coordenadas_x_recorrido[-1] - coordenadas_x_recorrido[-2]
                         cambio_y=coordenadas_y_recorrido[-1] - coordenadas_y_recorrido[-2]
-                        coordenadas_mascara=calcular_cambio_de_posicion_mascara(cambio_x, cambio_y, coordenadas_mascara)
+                        coordenadas_mascara=conseguir_cambio_de_posicion_mascara(cambio_x, cambio_y, coordenadas_mascara)
                         
                     if(deteccion_hongo=="1"):
                         esta_punto_central_en_hongo = mascara_hongo_final[coordenadas_y_recorrido[-1], coordenadas_x_recorrido[-1]]
                         puntos_centrales_en_hongo.append(esta_punto_central_en_hongo)
                         
-            frame_contador+=1
-    
-            filas=frame.shape[0]
-            columnas=frame.shape[1]
-            
+            frame_contador+=1   
             #GRAFICO  DE RECORRIDO DE LABEL (HORMIGA) SELECCIONADO
             
             colores = [(1, 0.6, 0) if v == True else (0, 0.5, 1) for v in puntos_centrales_en_hongo]
-            plt.scatter(coordenadas_x_recorrido,filas-np.array(coordenadas_y_recorrido),s=2,c=colores)
-            plt.xlim(0,columnas)
-            plt.ylim(0,filas)
+            mostrar_grafico(coordenadas_x_recorrido,filas-np.array(coordenadas_y_recorrido),2,colores,columnas,filas)
             plt.show()
             
             
             #GRAFICO DE PUNTOS INDIVIDUALIZADOS CON PASADO PUNTO CENTRAL
             
             #colores = [(1, 0.6, 0) if v == True else (0, 0.5, 1) for v in puntos_centrales_en_hongo]
-            # plt.scatter(coordenadas_x,filas-coordenadas_y,s=10,c=colores)
-            # plt.xlim(0,columnas)
-            # plt.ylim(0,filas)
-            # if frame_contador>=3:
-            #     plt.scatter(coordenadas_x_recorrido[-2],filas-coordenadas_y_recorrido[-2],s=10,c="green")
-            # plt.show()
+            #mostrar_grafico(coordenadas_x_recorrido, filas - np.array(coordenadas_y_recorrido), 2, colores, columnas, filas)
+            #plt.show()
             
             #DESPLIGUE DE VIDEO CON CAPA Y PUNTO CENTRAL DE LABEL SELECCIONADO
+            
             cv.circle(frame2, punto_central, 2, (0,255,0),5)
             cv.imshow("Video",frame2)
             if cv.waitKey(1) & 0xFF==ord('d'):
@@ -344,16 +338,15 @@ def main():
     video.release()
     cv.destroyAllWindows()
     
-    #GRAFICO  DE RECORRIDO DE LABEL (HORMIGA) SELECCIONADO
+    #GRAFICO  DE RECORRIDO DE LABEL (HORMIGA) SELECCIONADO CON PUNTO DE INICIO Y PUNTO FINAL
  
     video=cv.VideoCapture("ant_video.mp4")
     is_true,frame=video.read()
     colores = [(1, 0.6, 0) if v == True else (0, 0.5, 1) for v in puntos_centrales_en_hongo]
-    plt.scatter(coordenadas_x_recorrido,filas-np.array(coordenadas_y_recorrido),s=2 , c=colores)
-    plt.scatter(coordenadas_x_recorrido[0],filas - coordenadas_y_recorrido[0],s=2, c="green")
-    plt.scatter(coordenadas_x_recorrido[-1],filas-coordenadas_y_recorrido[-1],s=2, c="red")
-    plt.xlim(0,columnas)
-    plt.ylim(0,filas)
+    mostrar_grafico(coordenadas_x_recorrido, filas - np.array(coordenadas_y_recorrido), 2, colores, columnas, filas)
+    mostrar_grafico([coordenadas_x_recorrido[0]], [filas - coordenadas_y_recorrido[0]], 2, ["green"], columnas, filas)
+    mostrar_grafico([coordenadas_x_recorrido[-1]], [filas - coordenadas_y_recorrido[-1]], 2, ["red"], columnas, filas)
+    
     plt.show()
             
 main()

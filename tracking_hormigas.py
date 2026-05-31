@@ -74,7 +74,7 @@ def conseguir_coordenadas_en_los_extremos_de_cluster(labels,coordenadas_x,coorde
     return  min(x_de_l),max(x_de_l),min(y_de_l),max(y_de_l)
 
 
-def conseguir_rectangulo_de_un_label_en_frame(frame,labels,coordenadas_x,coordenadas_y,l,coordenadas_bordes_rectangulos):
+def conseguir_rectangulo_de_un_label_en_frame(labels,coordenadas_x,coordenadas_y,l):
     x_minimo_de_l,x_maximo_de_l,y_minimo_de_l,y_maximo_de_l=conseguir_coordenadas_en_los_extremos_de_cluster(labels, coordenadas_x, coordenadas_y, l)
     esquina_superior_izquierda=(x_minimo_de_l,y_minimo_de_l)
     esquina_inferior_derecha=(x_maximo_de_l,y_maximo_de_l)
@@ -239,7 +239,7 @@ def main():
     frame_con_rectangulos=frame.copy()
     
     for l in lista_labels:
-        esquina_superior_izquierda,esquina_inferior_derecha=conseguir_rectangulo_de_un_label_en_frame(frame_con_rectangulos,labels_hormigas, coordenadas_x, coordenadas_y, l, coordenadas_bordes_rectangulos)
+        esquina_superior_izquierda,esquina_inferior_derecha=conseguir_rectangulo_de_un_label_en_frame(labels_hormigas, coordenadas_x, coordenadas_y, l)
         coordenadas_bordes_rectangulos.append([esquina_superior_izquierda, esquina_inferior_derecha])
         dibujar_rectangulo_en_frame(frame_con_rectangulos,esquina_superior_izquierda,esquina_inferior_derecha,l)
         
@@ -262,6 +262,7 @@ def main():
     deteccion_hongo=input("¿Desea saber en que parte del recorrido estuvo sobre el hongo? 1.Si , 0.No  ")
     
     #DETECCION HONGO
+    puntos_centrales_en_hongo=[]
     if(deteccion_hongo=="1"):
         
         imagen_hongo_aislado=separacion_fondo(video,200)
@@ -273,7 +274,6 @@ def main():
         labels_puntos_hongo=individualizar_puntos(coordenadas_puntos_hongo,10,30)
         mascara_puntos_hongo=depurar_ruido(labels_puntos_hongo, coordenadas_puntos_hongo, mascara_puntos_hongo)
         coordenadas_puntos_hongo_incluyendo_huecos,mascara_hongo_final=rellenar_huecos_hongo(mascara_puntos_hongo)
-        puntos_centrales_en_hongo=[]
         
         #Volver al frame 1 porque se cambio en separacion_fondo()
         video.set(cv.CAP_PROP_POS_FRAMES, 1)
@@ -286,13 +286,13 @@ def main():
         # coordenadas_hongo_x=coordenadas_puntos_hongo_incluyendo_huecos[:,0]
         # coordenadas_hongo_y=coordenadas_puntos_hongo_incluyendo_huecos[:,1]
         # mostrar_grafico(coordenadas_hongo_x, filas - coordenadas_hongo_y, 2, "red", columnas, filas)
-        #plt.show()
+        # plt.show()
         
-        
-    #p=input("Hola")
+    
     #Variables para ajustar que frames estudiar
     salto_frame = 1
     frame_contador = 1    
+    input("Hola")
     while(True):
         is_true,frame=video.read()
         frame2=frame.copy()
@@ -326,26 +326,25 @@ def main():
                         puntos_centrales_en_hongo.append(esta_punto_central_en_hongo)
                         
                         #GRAFICO  DE RECORRIDO DE LABEL (HORMIGA) SELECCIONADO DETECTANDO HONGO
-                        colores = [(1, 0.6, 0) if v == True else (0, 0.5, 1) for v in puntos_centrales_en_hongo]
-                        mostrar_grafico(coordenadas_x_recorrido,filas-np.array(coordenadas_y_recorrido),2,colores,columnas,filas)
-                        plt.show()
+                        # colores = [(1, 0.6, 0) if v == True else (0, 0.5, 1) for v in puntos_centrales_en_hongo]
+                        # mostrar_grafico(coordenadas_x_recorrido,filas-np.array(coordenadas_y_recorrido),2,colores,columnas,filas)
+                        # plt.show()
+                    
+                    #GRAFICO  DE RECORRIDO DE LABEL (HORMIGA) SELECCIONADO
+                    #else:
                         
-                    else:
-                        
-                        frame_contador+=1   
-                        #GRAFICO  DE RECORRIDO DE LABEL (HORMIGA) SELECCIONADO
-                        mostrar_grafico(coordenadas_x_recorrido,filas-np.array(coordenadas_y_recorrido),2,(0,0.5,1),columnas,filas)
-                        plt.show()
+                        # mostrar_grafico(coordenadas_x_recorrido,filas-np.array(coordenadas_y_recorrido),2,(0,0.5,1),columnas,filas)
+                        # plt.show()
             
-                        #GRAFICO DE PUNTOS INDIVIDUALIZADOS CON PASADO PUNTO CENTRAL
+            #GRAFICO DE PUNTOS INDIVIDUALIZADOS CON PASADO PUNTO CENTRAL
                         
-                        #colores = [(1, 0.6, 0) if v == True else (0, 0.5, 1) for v in puntos_centrales_en_hongo]
-                        #mostrar_grafico(coordenadas_x_recorrido, filas - np.array(coordenadas_y_recorrido), 2, colores, columnas, filas)
-                        #plt.show()
+            #colores = [(1, 0.6, 0) if v == True else (0, 0.5, 1) for v in puntos_centrales_en_hongo]
+            #mostrar_grafico(coordenadas_x_recorrido, filas - np.array(coordenadas_y_recorrido), 2, colores, columnas, filas)
+            #plt.show()
                         
             
             #DESPLIGUE DE VIDEO CON CAPA Y PUNTO CENTRAL DE LABEL SELECCIONADO
-            
+            frame_contador+=1   
             cv.circle(frame2, punto_central, 2, (0,255,0),5)
             cv.imshow("Video",frame2)
             if cv.waitKey(1) & 0xFF==ord('d'):
@@ -356,10 +355,7 @@ def main():
     cv.destroyAllWindows()
     
     #GRAFICO  DE RECORRIDO DE LABEL (HORMIGA) SELECCIONADO CON PUNTO DE INICIO Y PUNTO FINAL
- 
-    video=cv.VideoCapture("ant_video.mp4")
-    is_true,frame=video.read()
-    colores = [(1, 0.6, 0) if v == True else (0, 0.5, 1) for v in puntos_centrales_en_hongo]
+    colores = [(1, 0.6, 0) if v  else (0, 0.5, 1) for v in puntos_centrales_en_hongo]
     mostrar_grafico(coordenadas_x_recorrido, filas - np.array(coordenadas_y_recorrido), 2, colores, columnas, filas)
     mostrar_grafico([coordenadas_x_recorrido[0]], [filas - coordenadas_y_recorrido[0]], 2, ["green"], columnas, filas)
     mostrar_grafico([coordenadas_x_recorrido[-1]], [filas - coordenadas_y_recorrido[-1]], 2, ["red"], columnas, filas)

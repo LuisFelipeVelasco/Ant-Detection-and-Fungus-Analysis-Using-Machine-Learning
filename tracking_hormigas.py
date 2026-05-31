@@ -8,6 +8,8 @@ import cv2 as cv
 from sklearn.cluster import DBSCAN
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.ndimage import binary_dilation, binary_fill_holes
+
 
 
 def detectar_coordenadas_hormigas(frame):
@@ -111,6 +113,13 @@ def detectar_coordenadas_puntos_en_hongo(imagen):
     
     #Combinacion de condiciones 
     mask_hormigas = cond_green & cond_blue & cond_thresh & cond_green_blue
+    
+    #RELLENO DE HUECOS :
+    
+    #Cierra los bordes
+    mask_hormigas = binary_dilation(mask_hormigas.astype(np.uint8))
+    #Rellena los huecos
+    mask_hormigas = binary_fill_holes(mask_hormigas)
     y_indices, x_indices = np.where(mask_hormigas)
     for x, y in zip(x_indices, y_indices):
         coordenadas.append([x,y])     
@@ -164,15 +173,14 @@ def main():
         coordenadas_x=coordenadas_puntos_hongo[:,0]
         coordenadas_y=coordenadas_puntos_hongo[:,1]
         labels_puntos_hongo=individualizar_puntos(coordenadas_puntos_hongo,10,30)
-        colores = [(0.5, 0.5, 0.5) if label == -1 else (1, 0, 0) for label in labels_puntos_hongo]
-        
         #GRAFICO DE PUNTOS DE HONGO
-        plt.scatter(coordenadas_x,filas-coordenadas_y,s=2,c=colores)
-        plt.xlim(0,columnas)
-        plt.ylim(0,filas)
-        plt.show()
+        # colores = [(0.5, 0.5, 0.5) if label == -1 else (1, 0, 0) for label in labels_puntos_hongo]
+        # plt.scatter(coordenadas_x,filas-coordenadas_y,s=2,c=colores)
+        # plt.xlim(0,columnas)
+        # plt.ylim(0,filas)
+        # plt.show()
         
-    p=input("Hola")
+    #p=input("Hola")
     #Variables para ajustar que frames estudiar
     salto_frame = 1
     frame_contador = 1    
@@ -190,7 +198,7 @@ def main():
                 if len(coordenadas_hormigas)!=0:
                     
                     #Individualizacion de cada punto para detectar si es del label elegido (hormiga) o ruido
-                    labels_hormigas=individualizar_hormigas(coordenadas_hormigas,8,20,average=True)
+                    labels_hormigas=individualizar_puntos(coordenadas_hormigas,8,20,average=True)
                     coordenadas_x=coordenadas_hormigas[:,0]
                     coordenadas_y=coordenadas_hormigas[:,1]
                     

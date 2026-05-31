@@ -81,6 +81,50 @@ def conseguir_punto_central_label(labels,coordenadas_x,coordenadas_y,l):
     return  (int(sum(x_de_l)/len(x_de_l)),int(sum(y_de_l)/len(x_de_l)))
     
 
+def conseguir_punto_central_frame(labels_individuales,labels,coordenadas_x,coordenadas_y,coordenadas_x_recorrido,coordenadas_y_recorrido):
+    
+    if len(labels_individuales)==1:
+        label_punto_central=labels_individuales[0]
+        punto_central=conseguir_punto_central_label(labels,coordenadas_x,coordenadas_y,label_punto_central)
+        return punto_central
+        
+    #Si se reconocen dos labels y el primero es ruido calcula el punto central del otro label 
+    elif (len(labels_individuales)==2 and labels_individuales[0]==-1):
+        label_punto_central=labels_individuales[1]
+        punto_central=conseguir_punto_central_label(labels,coordenadas_x,coordenadas_y,label_punto_central)
+        return punto_central
+        
+    #Si reconoce mas de un label , identifica el punto central de cada uno y escoge el mas cercano al punto central del pasado frame
+    else:
+        puntos_centrales_x=[]
+        puntos_centrales_y=[]
+        
+        #Si  hay ruido itera desde el segundo label , sino , itera desde el primer label
+        primer_index=1 if (labels_individuales[0]==-1) else 0
+        ultimo_index=len(labels_individuales) if (labels_individuales[0]==-1) else  len(labels_individuales)    
+        
+        #Identifica el punto central de cada label
+        for i in range(primer_index,ultimo_index):
+            punto_central_i=conseguir_punto_central_label(labels,coordenadas_x,coordenadas_y,labels_individuales[i])
+            puntos_centrales_x.append(punto_central_i[0])
+            puntos_centrales_y.append(punto_central_i[1])
+        
+        #Coordenadas de pasado punto central
+        punto_central_viejo_x=coordenadas_x_recorrido[-1]
+        punto_central_viejo_y=coordenadas_y_recorrido[-1]
+        
+        #Numpy array de las coordenadas de los puntos centrales de cada label
+        puntos_centrales_x=np.array(puntos_centrales_x)
+        puntos_centrales_y=np.array(puntos_centrales_y)
+        
+        #Distancia de cada punto central a el pasado punto central
+        distancias=((puntos_centrales_x - punto_central_viejo_x)**2 +  (puntos_centrales_y - punto_central_viejo_y)**2).tolist()
+        
+        #Establecimiento de nuevo punto central
+        index_punto_central_cercano_a_viejo=distancias.index(min(distancias))
+        punto_central=(puntos_centrales_x[index_punto_central_cercano_a_viejo],puntos_centrales_y[index_punto_central_cercano_a_viejo])
+        return punto_central
+
 
 
 
@@ -232,70 +276,23 @@ def main():
         is_true,frame=video.read()
         frame2=frame.copy()
         if is_true :
-            
             #Mascara para enfocarse en el label elegido
             frame=aplicar_mascara_frame(frame, coordenadas_mascara)
-            
             if (frame_contador%salto_frame==0):
-                
                 #Deteccion de hormigas
                 coordenadas_hormigas=detectar_coordenadas_hormigas(frame)
                 if len(coordenadas_hormigas)!=0:
-                    
                     #Individualizacion de cada punto para detectar si es del label elegido (hormiga) o ruido
                     labels_hormigas=individualizar_puntos(coordenadas_hormigas,8,20,average=True)
                     coordenadas_x=coordenadas_hormigas[:,0]
                     coordenadas_y=coordenadas_hormigas[:,1]
                     
                     #Reconocimiento de punto central
-                    unicos_labels=np.unique(labels_hormigas)
+                    labels_individuales=np.unique(labels_hormigas)
                     #Si solo se reconoce un label (Probablemente la misma hormiga) calcula el punto central
-                    if len(unicos_labels)==1:
-                        label_punto_central=unicos_labels[0]
-                        punto_central=conseguir_punto_central_label(labels_hormigas,coordenadas_x,coordenadas_y,label_punto_central)
-                        coordenadas_x_recorrido.append(punto_central[0])
-                        coordenadas_y_recorrido.append(punto_central[1])
-                        
-                        
-                    #Si se reconocen dos labels y el primero es ruido calcula el punto central del otro label (probablemente la hormiga)
-                    elif (len(unicos_labels)==2 and unicos_labels[0]==-1):
-                        label_punto_central=unicos_labels[1]
-                        punto_central=conseguir_punto_central_label(labels_hormigas,coordenadas_x,coordenadas_y,label_punto_central)
-                        coordenadas_x_recorrido.append(punto_central[0])
-                        coordenadas_y_recorrido.append(punto_central[1])
-                        
-                    #Si reconoce mas de un label , identifica el punto central de cada uno y escoge el mas cercano al punto central del pasado frame
-                    else:
-                        puntos_centrales_x=[]
-                        puntos_centrales_y=[]
-                        
-                        #Si  hay ruido itera desde el segundo label , sino , itera desde el primer label
-                        primer_index=1 if (unicos_labels[0]==-1) else 0
-                        ultimo_index=len(unicos_labels) if (unicos_labels[0]==-1) else  len(unicos_labels)    
-                        
-                        #Identifica el punto central de cada label
-                        for i in range(primer_index,ultimo_index):
-                            punto_central_i=conseguir_punto_central_label(labels_hormigas,coordenadas_x,coordenadas_y,unicos_labels[i])
-                            puntos_centrales_x.append(punto_central_i[0])
-                            puntos_centrales_y.append(punto_central_i[1])
-                        
-                        #Coordenadas de pasado punto central
-                        punto_central_viejo_x=coordenadas_x_recorrido[-1]
-                        punto_central_viejo_y=coordenadas_y_recorrido[-1]
-                        
-                        #Numpy array de las coordenadas de los puntos centrales de cada label
-                        puntos_centrales_x=np.array(puntos_centrales_x)
-                        puntos_centrales_y=np.array(puntos_centrales_y)
-                        
-                        #Distancia de cada punto central a el pasado punto central
-                        distancias=((puntos_centrales_x - punto_central_viejo_x)**2 +  (puntos_centrales_y - punto_central_viejo_y)**2).tolist()
-                        
-                        #Establecimiento de nuevo punto central
-                        index_punto_central_cercano_a_viejo=distancias.index(min(distancias))
-                        coordenadas_x_recorrido.append(puntos_centrales_x[index_punto_central_cercano_a_viejo])
-                        coordenadas_y_recorrido.append(puntos_centrales_y[index_punto_central_cercano_a_viejo])
-                        punto_central=(coordenadas_x_recorrido[-1] , coordenadas_y_recorrido[-1] )
-                        
+                    punto_central=conseguir_punto_central_frame(labels_individuales, labels_hormigas, coordenadas_x, coordenadas_y, coordenadas_x_recorrido, coordenadas_y_recorrido)
+                    coordenadas_x_recorrido.append(punto_central[0])
+                    coordenadas_y_recorrido.append(punto_central[1])
                     
                     #Reubicar mascara a partir de la ubicacion del ultimo punto central
                     if len(coordenadas_x_recorrido)>=2:

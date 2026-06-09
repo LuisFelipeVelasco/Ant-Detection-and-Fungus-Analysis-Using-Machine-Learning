@@ -3,7 +3,7 @@
 > **Applying Computer Vision and clustering algorithms — built from scratch — to detect, individualize, and track ants in both still images and live video, with optional fungus interaction analysis.**
 
 ---
-
+https://github.com/user-attachments/assets/190f7413-f283-4a63-b8aa-6a04f90cb52c
 ## 🎯 Purpose
 
 Ants are small, fast, and visually similar to background elements, making automated detection a genuine Computer Vision challenge. This project tackles two related problems:
@@ -178,6 +178,7 @@ pip install opencv-python scikit-learn numpy matplotlib
 ```
 
 ### 4. Run the video tracker
+You can find the and_video.mp4 file in : 
 Place your video file in the project root as `ant_video.mp4`, then:
 ```bash
 python Ant_Tracker.py

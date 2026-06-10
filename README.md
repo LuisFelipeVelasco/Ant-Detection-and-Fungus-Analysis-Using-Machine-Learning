@@ -181,8 +181,9 @@ pip install opencv-python scikit-learn numpy matplotlib
 ### 4. Run the video tracker
 You can find the and_video.mp4 file in : https://drive.google.com/file/d/13vYUA2h4e6-osCQqmZZM_C5nuIGg-Pg6/view?usp=sharing
 
-Place your video file in the project root as `ant_video.mp4`, then:
+Place your video file in the the Media directory as `ant_video.mp4`, then:
 ```bash
+cd Vision_Processing
 python Ant_Tracker.py
 ```
 The first frame will open with all detected ants labeled. Enter the label of the ant you want to track. Press `d` at any time to stop tracking and display the final trajectory plot.

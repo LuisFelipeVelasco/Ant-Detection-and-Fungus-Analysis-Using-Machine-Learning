@@ -21,8 +21,9 @@ Both components share the same core idea: use color-based pixel filtering to iso
 Ant-Detection-and-Fungus-Analysis/
 │
 ├── Ant_Fungus_Interaction_Analysis.ipynb   # 📓 Image analysis pipeline (K-Means + DBSCAN from scratch)
+├── Ant_Tracker.py                          # 🎥 Video tracking pipeline (DBSCAN + OpenCV)
 │
-└── Ant_Tracker.py                          # 🎥 Video tracking pipeline (DBSCAN + OpenCV)
+└── Media/                                  # 🖼️ Project media assets
 ```
 
 ---

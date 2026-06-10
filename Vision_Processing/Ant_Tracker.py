@@ -8,6 +8,7 @@ import cv2 as cv
 from sklearn.cluster import DBSCAN
 import numpy as np
 import matplotlib.pyplot as plt
+import os
 
 
 def detect_ant_coordinates(frame):
@@ -413,7 +414,8 @@ def plot_trajectory(x_coords, y_coords, point_size, colors, frame_width, frame_h
 
 def main():
     # ── Load first frame ──────────────────────────────────────────────────────
-    video = cv.VideoCapture("ant_video.mp4")
+    BASE = os.path.dirname(os.path.abspath(__file__))
+    video = cv.VideoCapture(os.path.join(BASE, "../Media/ant_video.mp4"))
     is_valid, frame = video.read()
     rows    = frame.shape[0]
     columns = frame.shape[1]

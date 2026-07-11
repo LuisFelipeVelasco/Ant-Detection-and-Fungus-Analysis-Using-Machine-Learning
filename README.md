@@ -39,10 +39,6 @@ Given a photograph of ants on a surface, the notebook:
 3. **Detects the fungus region** by applying a separate color filter and filling enclosed interior gaps.
 4. **Computes overlap** — for each detected ant, reports the percentage of its body that lies over the fungus.
 
-> 💡 **Paste a result image here showing the detected ants with their cluster labels.**
-
-> 🎬 *Example output: ants shown as colored point clouds over the grey fungus region, each labeled with its fungus overlap percentage.*
-
 ### 🧠 Algorithms Implemented From Scratch
 
 Both clustering algorithms are written entirely in Python without using scikit-learn or any ML library:
@@ -96,7 +92,7 @@ Input Image
 5. **Optionally detects fungus** by extracting a background image (median of random frames) and checking whether the ant's centroid lands inside the fungus region each frame.
 6. **Plots the full trajectory** at the end, with start (green) and end (red) points marked, and orange/blue coloring to indicate on/off fungus if enabled.
 
-> 💡 **Paste a video here showing the chosen ant and its travel path drawn on the plane.**
+> 
 
 ### Key Design Decisions
 

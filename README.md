@@ -1,34 +1,34 @@
-# 🐜 Ant Detection and Fungus Analysis Using Machine Learning
+#  Ant Detection and Fungus Analysis Using Machine Learning
 
 > **Applying Computer Vision and clustering algorithms — built from scratch — to detect, individualize, and track ants in both still images and live video, with optional fungus interaction analysis.**
 
 ---
 https://github.com/user-attachments/assets/190f7413-f283-4a63-b8aa-6a04f90cb52c
-## 🎯 Purpose
+## Purpose
 
 Ants are small, fast, and visually similar to background elements, making automated detection a genuine Computer Vision challenge. This project tackles two related problems:
 
-- 📸 **Image Analysis** (`Ant_Fungus_Interaction_Analysis.ipynb`) — Given a single photograph, detect all ants present, individualize them as separate clusters, and compute the percentage of each ant's body that overlaps with a fungus region.
-- 🎥 **Video Tracking** (`Ant_Tracker.py`) — Given a video, detect all ants in the first frame, let the user select one to follow, and continuously track its trajectory across the entire video — optionally detecting when it passes over a fungus.
+-  **Image Analysis** (`Ant_Fungus_Interaction_Analysis.ipynb`) — Given a single photograph, detect all ants present, individualize them as separate clusters, and compute the percentage of each ant's body that overlaps with a fungus region.
+-  **Video Tracking** (`Ant_Tracker.py`) — Given a video, detect all ants in the first frame, let the user select one to follow, and continuously track its trajectory across the entire video — optionally detecting when it passes over a fungus.
 
 Both components share the same core idea: use color-based pixel filtering to isolate ant-colored regions, then apply clustering to separate individual ants from one another.
 
 ---
 
-## 🗂️ Project Structure
+##  Project Structure
 
 ```
 Ant-Detection-and-Fungus-Analysis/
 │
-├── Ant_Fungus_Interaction_Analysis.ipynb   # 📓 Image analysis pipeline (K-Means + DBSCAN from scratch)
-├── Ant_Tracker.py                          # 🎥 Video tracking pipeline (DBSCAN + OpenCV)
+├── Ant_Fungus_Interaction_Analysis.ipynb   #  Image analysis pipeline (K-Means + DBSCAN from scratch)
+├── Ant_Tracker.py                          #  Video tracking pipeline (DBSCAN + OpenCV)
 │
-└── Media/                                  # 🖼️ Project media assets
+└── Media/                                  #  Project media assets
 ```
 
 ---
 
-## 📓 Ant Fungus Interaction Analysis — Image Notebook
+##  Ant Fungus Interaction Analysis — Image Notebook
 
 ### What It Does
 
@@ -39,7 +39,7 @@ Given a photograph of ants on a surface, the notebook:
 3. **Detects the fungus region** by applying a separate color filter and filling enclosed interior gaps.
 4. **Computes overlap** — for each detected ant, reports the percentage of its body that lies over the fungus.
 
-### 🧠 Algorithms Implemented From Scratch
+###  Algorithms Implemented From Scratch
 
 Both clustering algorithms are written entirely in Python without using scikit-learn or any ML library:
 
@@ -81,7 +81,7 @@ Input Image
 
 ---
 
-## 🎥 Ant Tracker — Video Script
+## Ant Tracker — Video Script
 
 ### What It Does
 
@@ -102,7 +102,7 @@ Input Image
 
 **Proximity-Based Centroid Selection** — When multiple DBSCAN clusters appear inside the ROI (e.g. two ants briefly close together), the tracker picks the centroid **nearest to the last known position**, on the assumption that the ant cannot teleport between frames.
 
-### ⚡ Vectorization
+###  Vectorization
 
 Multiple performance-critical operations in `Ant_Tracker.py` use NumPy vectorization instead of Python loops:
 
@@ -132,7 +132,7 @@ Video Input
 
 ---
 
-## 🛠️ Technologies & Libraries
+##  Technologies & Libraries
 
 | Library | Role |
 |---|---|
@@ -145,7 +145,7 @@ Video Input
 
 ---
 
-## ⚙️ Setup
+##  Setup
 
 ### Prerequisites
 - Python **3.9 or higher**
@@ -189,7 +189,7 @@ Open `Ant_Fungus_Interaction_Analysis.ipynb` in Google Colab or Jupyter. The not
 
 ---
 
-## 📚 Learnings
+##  Learnings
 
 **Clustering from Scratch (Notebook)**
 - Building K-Means by hand clarifies exactly what "convergence" means: the loop terminates when the centroid update step produces no change, not after a fixed number of iterations.
@@ -211,7 +211,7 @@ Open `Ant_Fungus_Interaction_Analysis.ipynb` in Google Colab or Jupyter. The not
 
 ---
 
-## 🚧 Known Limitations & Future Improvements
+##  Known Limitations & Future Improvements
 
 - Color-based detection is sensitive to lighting changes; an HSV-space filter or adaptive thresholding would generalize better across different environments.
 - The K-Means implementation is not seeded (random initialization), so results can vary between runs — K-Means++ initialization would improve stability.
